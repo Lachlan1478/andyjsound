@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Receive Stock — Andy J Sound{% endblock %}
+{% block page_title %}Receive Stock{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-box-arrow-in-down me-2"></i>Log Stock Received</div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Equipment Item *</label>
+              <select name="equipment_id" id="equipmentSelect" class="form-select" required onchange="updateCurrentStock(this)">
+                <option value="">— Select item —</option>
+                {% for item in equipment %}
+                  <option value="{{ item.id }}" data-stock="{{ item.current_stock }}" data-name="{{ item.name }}"
+                    {% if request.args.get('equipment_id') == item.id|string %}selected{% endif %}>
+                    {{ item.name }} ({{ item.sku }}) — currently {{ item.current_stock }}
+                  </option>
+                {% endfor %}
+              </select>
+              <div id="currentStockInfo" style="font-size:0.75rem;color:#64748b;margin-top:4px;"></div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Quantity Received *</label>
+              <input type="number" name="quantity" class="form-control" min="1" required placeholder="0">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Performed By</label>
+              <input type="text" name="performed_by" class="form-control" placeholder="Your name" value="Staff">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Link to Xero Order (optional)</label>
+              <select name="xero_order_id" class="form-select">
+                <option value="">— No Xero order —</option>
+                {% for order in pending_orders %}
+                  <option value="{{ order.id }}">
+                    {{ order.invoice_number }} — {{ order.item_description[:40] }} ({{ order.contact_name }}) — Qty: {{ order.quantity_outstanding }} outstanding
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">PO / Reference Number</label>
+              <input type="text" name="reference" class="form-control" placeholder="e.g. PO-1234 or delivery note number">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2" placeholder="Any notes about the delivery…"></textarea>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-brand px-4">
+              <i class="bi bi-check-lg me-1"></i>Confirm Received
+            </button>
+            <a href="{{ url_for('dashboard.index') }}" class="btn" style="background:rgba(255,255,255,0.05);color:#94a3b8;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending orders sidebar -->
+  <div class="col-12 col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock me-2"></i>Pending Xero Orders</div>
+      <div class="card-body p-0">
+        {% if pending_orders %}
+          <div style="max-height:480px;overflow-y:auto;">
+          {% for order in pending_orders %}
+          <div style="padding:0.75rem 1rem;border-bottom:1px solid #334155;cursor:pointer;" onclick="fillFromOrder('{{ order.id }}', '{{ order.item_description[:30] }}')">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div style="font-weight:600;font-size:0.85rem;">{{ order.invoice_number }}</div>
+                <div style="font-size:0.78rem;color:#94a3b8;">{{ order.item_description[:50] }}</div>
+                <div style="font-size:0.75rem;color:#64748b;">{{ order.contact_name }}</div>
+              </div>
+              <div class="text-end">
+                <div style="font-weight:600;color:#facc15;">{{ order.quantity_outstanding }}</div>
+                <div style="font-size:0.7rem;color:#64748b;">outstanding</div>
+                <span class="badge badge-{{ order.status }} rounded-pill mt-1" style="font-size:0.65rem;">{{ order.status.replace('_',' ') }}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-4" style="color:#64748b;font-size:0.875rem;">
+            No pending orders.<br>
+            <a href="{{ url_for('xero.index') }}" style="color:#f97316;">Sync Xero →</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateCurrentStock(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('currentStockInfo');
+  if (opt.value) {
+    info.textContent = `Current stock: ${opt.dataset.stock} units`;
+  } else {
+    info.textContent = '';
+  }
+}
+// Pre-select if query param present
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('equipmentSelect');
+  if (sel) updateCurrentStock(sel);
+});
+</script>
+{% endblock %}

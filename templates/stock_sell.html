@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Dispatch / Sell — Andy J Sound{% endblock %}
+{% block page_title %}Dispatch / Sell Stock{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-box-arrow-up-right me-2"></i>Log Stock Dispatched or Sold</div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Equipment Item *</label>
+              <select name="equipment_id" id="equipmentSelect" class="form-select" required onchange="updateAvailable(this)">
+                <option value="">— Select item —</option>
+                {% for item in equipment %}
+                  <option value="{{ item.id }}" data-stock="{{ item.current_stock }}"
+                    {% if request.args.get('equipment_id') == item.id|string %}selected{% endif %}>
+                    {{ item.name }} ({{ item.sku }}) — {{ item.current_stock }} in stock
+                  </option>
+                {% endfor %}
+              </select>
+              <div id="stockInfo" style="font-size:0.75rem;margin-top:4px;"></div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Quantity *</label>
+              <input type="number" name="quantity" id="qtyInput" class="form-control" min="1" required placeholder="0">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Performed By</label>
+              <input type="text" name="performed_by" class="form-control" placeholder="Your name" value="Staff">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Client / Customer Name</label>
+              <input type="text" name="client" class="form-control" placeholder="e.g. Rundle Street Venue" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2" placeholder="Event name, sale reference, hire details…"></textarea>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-brand px-4">
+              <i class="bi bi-check-lg me-1"></i>Confirm Dispatch
+            </button>
+            <a href="{{ url_for('dashboard.index') }}" class="btn" style="background:rgba(255,255,255,0.05);color:#94a3b8;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateAvailable(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('stockInfo');
+  const qty  = document.getElementById('qtyInput');
+  if (opt.value) {
+    const s = parseInt(opt.dataset.stock);
+    info.style.color = s > 0 ? '#4ade80' : '#f87171';
+    info.textContent = `Available: ${s} unit${s !== 1 ? 's' : ''}`;
+    qty.max = s;
+  } else {
+    info.textContent = '';
+    qty.max = '';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('equipmentSelect');
+  if (sel) updateAvailable(sel);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Xero Orders — Andy J Sound{% endblock %}
+{% block page_title %}Xero Integration{% endblock %}
+
+{% block content %}
+
+<!-- Connection status bar -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row align-items-center g-3">
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:48px;height:48px;background:rgba(14,165,233,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#38bdf8;">
+            <i class="bi bi-cloud"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.95rem;">Xero Accounting</div>
+            {% if token %}
+              <div style="font-size:0.8rem;color:#4ade80;">
+                <span class="dot green me-1"></span>Connected to {{ token.tenant_name or 'Xero Org' }}
+              </div>
+            {% else %}
+              <div style="font-size:0.8rem;color:#f87171;">
+                <span class="dot red me-1"></span>Not connected
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+          {% if token %}
+            <form method="POST" action="{{ url_for('xero.sync') }}" class="d-inline">
+              <button type="submit" class="btn btn-brand">
+                <i class="bi bi-arrow-clockwise me-1"></i>Sync from Xero
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('xero.disconnect') }}" onsubmit="return confirm('Disconnect from Xero?')" class="d-inline">
+              <button type="submit" class="btn" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
+                <i class="bi bi-x-circle me-1"></i>Disconnect
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('xero.connect') }}" class="btn btn-brand">
+              <i class="bi bi-plug me-1"></i>Connect Xero
+            </a>
+            <form method="POST" action="{{ url_for('xero.demo_sync') }}" class="d-inline">
+              <button type="submit" class="btn btn-outline-brand">
+                <i class="bi bi-database me-1"></i>Load Demo Data
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+{% if not token %}
+<div class="card mb-4" style="border-color:rgba(14,165,233,0.25);">
+  <div class="card-body">
+    <h6 style="color:#38bdf8;margin-bottom:0.75rem;"><i class="bi bi-info-circle me-2"></i>How Xero Integration Works</h6>
+    <div class="row g-3">
+      {% for step, title, desc in [
+        ('1', 'Connect Xero', 'Click "Connect Xero" to authorise via OAuth 2.0. You\'ll need a Xero Developer account and app credentials in your .env file.'),
+        ('2', 'Sync Orders', 'Click "Sync from Xero" to pull your purchase orders and bills into the warehouse system.'),
+        ('3', 'Receive Stock', 'When goods arrive, go to Receive Stock and link the delivery to a Xero order line.'),
+        ('4', 'Stay Synced', 'Re-sync any time to pick up new orders from Xero. Stock quantities are managed locally.')
+      ] %}
+      <div class="col-12 col-md-6 col-xl-3">
+        <div style="display:flex;gap:0.75rem;">
+          <div style="width:28px;height:28px;background:rgba(249,115,22,0.15);color:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;flex-shrink:0;">{{ step }}</div>
+          <div>
+            <div style="font-weight:600;font-size:0.85rem;color:#e2e8f0;">{{ title }}</div>
+            <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">{{ desc }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-3 p-3" style="background:rgba(0,0,0,0.2);border-radius:8px;font-size:0.78rem;color:#64748b;">
+      <strong style="color:#94a3b8;">Setup:</strong> Set <code style="color:#38bdf8;">XERO_CLIENT_ID</code> and <code style="color:#38bdf8;">XERO_CLIENT_SECRET</code> in your <code>.env</code> file, then register <code>http://localhost:5000/xero/callback</code> as a redirect URI in the Xero Developer Portal.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Orders table -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-receipt me-2"></i>Purchase Orders / Bills</span>
+    <span style="font-size:0.8rem;color:#64748b;">{{ orders|length }} order lines</span>
+  </div>
+  <div class="card-body p-0">
+    {% if orders %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Supplier</th>
+            <th>Description</th>
+            <th>Ordered</th>
+            <th>Received</th>
+            <th>Outstanding</th>
+            <th>Unit Price</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td style="font-weight:600;font-size:0.85rem;">{{ order.invoice_number }}</td>
+            <td style="color:#94a3b8;font-size:0.82rem;">{{ order.contact_name }}</td>
+            <td style="font-size:0.82rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ order.item_description }}">{{ order.item_description }}</td>
+            <td style="font-weight:600;">{{ order.quantity_ordered }}</td>
+            <td style="color:#4ade80;">{{ order.quantity_received }}</td>
+            <td>
+              {% if order.quantity_outstanding > 0 %}
+                <span style="color:#facc15;font-weight:600;">{{ order.quantity_outstanding }}</span>
+              {% else %}
+                <span style="color:#4ade80;">✓</span>
+              {% endif %}
+            </td>
+            <td style="color:#94a3b8;font-size:0.82rem;">${{ '%.2f'|format(order.unit_price) }}</td>
+            <td style="color:#64748b;font-size:0.8rem;white-space:nowrap;">{{ order.invoice_date.strftime('%d %b %Y') if order.invoice_date else '—' }}</td>
+            <td>
+              <span class="badge rounded-pill px-2"
+                style="font-size:0.68rem;
+                {% if order.status == 'received' %}background:rgba(34,197,94,0.15);color:#4ade80;
+                {% elif order.status == 'partially_received' %}background:rgba(234,179,8,0.15);color:#facc15;
+                {% else %}background:rgba(239,68,68,0.1);color:#f87171;{% endif %}">
+                {{ order.status.replace('_',' ')|title }}
+              </span>
+            </td>
+            <td>
+              {% if order.status != 'received' %}
+              <a href="{{ url_for('stock.receive') }}?xero_order_id={{ order.id }}" class="btn btn-sm" style="background:rgba(34,197,94,0.1);color:#4ade80;padding:0.2rem 0.5rem;font-size:0.75rem;">
+                <i class="bi bi-box-arrow-in-down me-1"></i>Receive
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5" style="color:#64748b;">
+        <i class="bi bi-cloud-slash" style="font-size:2.5rem;"></i>
+        <p class="mt-2">No orders synced yet.</p>
+        {% if token %}
+          <form method="POST" action="{{ url_for('xero.sync') }}" class="d-inline">
+            <button type="submit" class="btn btn-brand">Sync from Xero</button>
+          </form>
+        {% else %}
+          <form method="POST" action="{{ url_for('xero.demo_sync') }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-brand">Load Demo Data</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

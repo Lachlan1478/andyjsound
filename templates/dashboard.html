@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Andy J Sound Warehouse{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- KPI Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-value">{{ total_items }}</div>
+      <div class="stat-label">Total SKUs</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-value">{{ in_stock }}</div>
+      <div class="stat-label">In Stock</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-value">{{ low_stock }}</div>
+      <div class="stat-label">Low Stock</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-value">{{ out_of_stock }}</div>
+      <div class="stat-label">Out of Stock</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="row g-3">
+
+  <!-- Low stock alerts -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Needs Attention</span>
+        <a href="{{ url_for('equipment.list_equipment', status='low') }}" class="btn btn-sm btn-outline-brand">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if low_stock_items %}
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Location</th>
+                <th>Stock</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in low_stock_items %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('equipment.detail', item_id=item.id) }}" class="table-link">
+                    {{ item.name }}
+                  </a>
+                  <div class="table-sub">{{ item.sku }}</div>
+                </td>
+                <td class="table-muted">{{ item.location or '—' }}</td>
+                <td>
+                  <span style="font-weight:600;">{{ item.current_stock }}</span>
+                  <span class="table-sub">/{{ item.min_stock_level }} min</span>
+                </td>
+                <td>
+                  {% if item.stock_status == 'out_of_stock' %}
+                    <span class="badge badge-out rounded-pill px-2">Out</span>
+                  {% else %}
+                    <span class="badge badge-low-stock rounded-pill px-2">Low</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-center py-5 table-muted">
+            <p class="mb-0" style="font-size:0.875rem;">All items well stocked</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recent Activity</span>
+        <a href="{{ url_for('stock.movements') }}" class="btn btn-sm btn-outline-brand">Full Log</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent_movements %}
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in recent_movements %}
+              <tr>
+                <td class="table-muted" style="white-space:nowrap;">{{ m.created_at.strftime('%d %b, %H:%M') }}</td>
+                <td>
+                  <span class="badge badge-{{ m.movement_type }} rounded-pill px-2" style="font-size:0.7rem;text-transform:capitalize;">
+                    {{ m.movement_type.replace('_',' ') }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{{ url_for('equipment.detail', item_id=m.equipment_id) }}" class="table-link">
+                    {{ m.equipment.name if m.equipment else '—' }}
+                  </a>
+                </td>
+                <td style="font-weight:600;">{{ '+' if m.quantity > 0 else '' }}{{ m.quantity }}</td>
+                <td class="table-muted">{{ m.reference or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-center py-4 table-muted">No activity recorded yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

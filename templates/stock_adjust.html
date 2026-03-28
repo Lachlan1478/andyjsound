@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Adjust Stock — Andy J Sound{% endblock %}
+{% block page_title %}Adjust Stock{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-sliders me-2"></i>Manual Stock Adjustment</div>
+      <div class="card-body p-4">
+        <div class="alert alert-info mb-4" style="font-size:0.82rem;">
+          <i class="bi bi-info-circle me-1"></i>
+          Use this for stock counts, damaged goods write-offs, or corrections. A movement record will be created automatically.
+        </div>
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Equipment Item *</label>
+              <select name="equipment_id" id="equipmentSelect" class="form-select" required onchange="updateCurrent(this)">
+                <option value="">— Select item —</option>
+                {% for item in equipment %}
+                  <option value="{{ item.id }}" data-stock="{{ item.current_stock }}"
+                    {% if request.args.get('equipment_id') == item.id|string %}selected{% endif %}>
+                    {{ item.name }} ({{ item.sku }}) — currently {{ item.current_stock }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">New Quantity (absolute) *</label>
+              <input type="number" name="new_quantity" id="newQty" class="form-control" min="0" required placeholder="Enter actual count">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Performed By</label>
+              <input type="text" name="performed_by" class="form-control" placeholder="Your name" value="Staff">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Reason *</label>
+              <select name="reason" class="form-select">
+                <option>Stock count correction</option>
+                <option>Damaged goods write-off</option>
+                <option>Lost / missing</option>
+                <option>Return from hire</option>
+                <option>Transferred to another location</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <div id="diffDisplay" style="display:none;padding:0.6rem 0.85rem;border-radius:8px;font-size:0.85rem;font-weight:500;"></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-brand px-4">
+              <i class="bi bi-check-lg me-1"></i>Apply Adjustment
+            </button>
+            <a href="{{ url_for('dashboard.index') }}" class="btn" style="background:rgba(255,255,255,0.05);color:#94a3b8;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentStock = 0;
+function updateCurrent(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    currentStock = parseInt(opt.dataset.stock);
+    document.getElementById('newQty').placeholder = `Currently: ${currentStock}`;
+  }
+  recalcDiff();
+}
+function recalcDiff() {
+  const newVal = parseInt(document.getElementById('newQty').value);
+  const display = document.getElementById('diffDisplay');
+  if (!isNaN(newVal) && currentStock !== undefined) {
+    const diff = newVal - currentStock;
+    display.style.display = 'block';
+    if (diff > 0) {
+      display.style.background = 'rgba(34,197,94,0.1)';
+      display.style.color = '#4ade80';
+      display.textContent = `Stock will increase by +${diff} (${currentStock} → ${newVal})`;
+    } else if (diff < 0) {
+      display.style.background = 'rgba(239,68,68,0.1)';
+      display.style.color = '#f87171';
+      display.textContent = `Stock will decrease by ${diff} (${currentStock} → ${newVal})`;
+    } else {
+      display.style.background = 'rgba(148,163,184,0.1)';
+      display.style.color = '#94a3b8';
+      display.textContent = `No change (${currentStock})`;
+    }
+  } else {
+    display.style.display = 'none';
+  }
+}
+document.getElementById('newQty').addEventListener('input', recalcDiff);
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('equipmentSelect');
+  if (sel) updateCurrent(sel);
+});
+</script>
+{% endblock %}

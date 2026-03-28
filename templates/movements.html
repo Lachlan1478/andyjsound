@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Activity Log — Andy J Sound{% endblock %}
+{% block page_title %}Activity Log{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <form class="d-flex gap-2 flex-wrap" method="GET">
+    <input type="search" name="q" class="form-control" placeholder="Search item or reference…" value="{{ search }}" style="width:200px;">
+    <select name="type" class="form-select" style="width:160px;">
+      <option value="">All Types</option>
+      {% for t in ['received', 'sold', 'adjustment', 'xero_sync'] %}
+        <option value="{{ t }}" {% if movement_type == t %}selected{% endif %} style="text-transform:capitalize;">{{ t.replace('_',' ')|title }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-brand">Filter</button>
+    {% if search or movement_type %}
+      <a href="{{ url_for('stock.movements') }}" class="btn" style="background:rgba(255,255,255,0.05);color:#94a3b8;">Clear</a>
+    {% endif %}
+  </form>
+  <div style="font-size:0.8rem;color:#64748b;">{{ movements.total }} records</div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if movements.items %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Date / Time</th>
+            <th>Type</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Reference</th>
+            <th>Notes</th>
+            <th>By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movements.items %}
+          <tr>
+            <td style="color:#64748b;font-size:0.8rem;white-space:nowrap;">{{ m.created_at.strftime('%d %b %Y') }}<br>{{ m.created_at.strftime('%H:%M') }}</td>
+            <td>
+              <span class="badge badge-{{ m.movement_type }} rounded-pill px-2" style="font-size:0.7rem;text-transform:capitalize;">
+                {{ m.movement_type.replace('_',' ') }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('equipment.detail', item_id=m.equipment_id) }}" style="color:#e2e8f0;text-decoration:none;font-weight:500;">
+                {{ m.equipment.name if m.equipment else '—' }}
+              </a>
+            </td>
+            <td>
+              <span style="font-weight:700;font-size:0.95rem;color:{% if m.quantity > 0 %}#4ade80{% else %}#f87171{% endif %};">
+                {{ '+' if m.quantity > 0 else '' }}{{ m.quantity }}
+              </span>
+            </td>
+            <td style="color:#94a3b8;font-size:0.82rem;">{{ m.reference or '—' }}</td>
+            <td style="color:#94a3b8;font-size:0.82rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ m.notes }}">{{ m.notes or '—' }}</td>
+            <td style="color:#64748b;font-size:0.8rem;">{{ m.performed_by }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if movements.pages > 1 %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {% if not movements.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('stock.movements', page=movements.prev_num, type=movement_type, q=search) }}">‹</a>
+          </li>
+          {% for p in movements.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+              <li class="page-item {% if p == movements.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('stock.movements', page=p, type=movement_type, q=search) }}">{{ p }}</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {% if not movements.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('stock.movements', page=movements.next_num, type=movement_type, q=search) }}">›</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+    {% else %}
+      <div class="text-center py-5" style="color:#64748b;">No movements found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

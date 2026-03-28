@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Equipment — Andy J Sound{% endblock %}
+{% block page_title %}Equipment{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <form class="d-flex gap-2 flex-wrap" method="GET">
+    <input type="search" name="q" class="form-control" placeholder="Search equipment…" value="{{ search }}" style="width:200px;">
+    <select name="category" class="form-select" style="width:160px;">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+        <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-select" style="width:140px;">
+      <option value="">All Status</option>
+      <option value="ok"  {% if current_status == 'ok' %}selected{% endif %}>In Stock</option>
+      <option value="low" {% if current_status == 'low' %}selected{% endif %}>Low Stock</option>
+      <option value="out" {% if current_status == 'out' %}selected{% endif %}>Out of Stock</option>
+    </select>
+    <button type="submit" class="btn btn-brand">Filter</button>
+    {% if search or current_category or current_status %}
+      <a href="{{ url_for('equipment.list_equipment') }}" class="btn btn-outline-secondary" style="border-color:#334155;color:#94a3b8;">Clear</a>
+    {% endif %}
+  </form>
+  <a href="{{ url_for('equipment.add_equipment') }}" class="btn btn-brand">
+    <i class="bi bi-plus-lg me-1"></i>Add Item
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>{{ items|length }} item{{ 's' if items|length != 1 else '' }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if items %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th>Stock</th>
+            <th>Min Level</th>
+            <th>Status</th>
+            <th style="width:130px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>
+              <a href="{{ url_for('equipment.detail', item_id=item.id) }}" style="color:#f1f5f9;text-decoration:none;font-weight:500;">{{ item.name }}</a>
+              <div style="font-size:0.72rem;color:#64748b;">{{ item.sku }}</div>
+            </td>
+            <td>
+              <span class="badge" style="background:rgba(249,115,22,0.12);color:#fb923c;border:1px solid rgba(249,115,22,0.2);font-size:0.72rem;">{{ item.category }}</span>
+            </td>
+            <td style="color:#94a3b8;font-size:0.82rem;">{{ item.location or '—' }}</td>
+            <td>
+              <div style="font-weight:600;font-size:0.95rem;">{{ item.current_stock }}</div>
+              <div class="stock-bar mt-1" style="width:60px;">
+                {% set pct = [((item.current_stock / (item.min_stock_level * 3)) * 100)|int, 100]|min %}
+                <div class="stock-bar-fill" style="width:{{ pct }}%;background:{{'#4ade80' if item.stock_status == 'in_stock' else '#facc15' if item.stock_status == 'low_stock' else '#f87171'}};"></div>
+              </div>
+            </td>
+            <td style="color:#64748b;font-size:0.82rem;">{{ item.min_stock_level }}</td>
+            <td>
+              {% if item.stock_status == 'in_stock' %}
+                <span class="badge badge-in-stock rounded-pill px-2">In Stock</span>
+              {% elif item.stock_status == 'low_stock' %}
+                <span class="badge badge-low-stock rounded-pill px-2">Low</span>
+              {% else %}
+                <span class="badge badge-out rounded-pill px-2">Out</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('equipment.detail', item_id=item.id) }}" class="btn btn-sm" style="background:rgba(255,255,255,0.05);color:#94a3b8;padding:0.25rem 0.5rem;" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('equipment.edit_equipment', item_id=item.id) }}" class="btn btn-sm" style="background:rgba(255,255,255,0.05);color:#94a3b8;padding:0.25rem 0.5rem;" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('equipment.delete_equipment', item_id=item.id) }}" onsubmit="return confirm('Delete {{ item.name }}?')">
+                  <button type="submit" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:#f87171;padding:0.25rem 0.5rem;" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="text-center py-5" style="color:#64748b;">
+        <i class="bi bi-box-seam" style="font-size:2.5rem;"></i>
+        <p class="mt-2">No equipment found. <a href="{{ url_for('equipment.add_equipment') }}" style="color:#f97316;">Add some?</a></p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if action == 'edit' else 'Add' }} Equipment — Andy J Sound{% endblock %}
+{% block page_title %}{{ 'Edit' if action == 'edit' else 'Add New' }} Equipment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-box-seam me-2"></i>
+        {{ 'Edit: ' + item.name if item else 'New Equipment Item' }}
+      </div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Item Name *</label>
+              <input type="text" name="name" class="form-control" required
+                     value="{{ item.name if item else '' }}" placeholder="e.g. QSC K12.2 Active Speaker">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">SKU / Code *</label>
+              <input type="text" name="sku" class="form-control"
+                     {% if action == 'edit' %}readonly style="opacity:0.6"{% else %}required{% endif %}
+                     value="{{ item.sku if item else '' }}" placeholder="e.g. QSC-K122">
+              {% if action == 'edit' %}
+                <div style="font-size:0.72rem;color:#64748b;margin-top:3px;">SKU cannot be changed after creation.</div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="2"
+                        placeholder="Optional notes about this item">{{ item.description if item else '' }}</textarea>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select">
+                {% for cat in categories %}
+                  <option value="{{ cat }}" {% if item and item.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Unit</label>
+              <select name="unit" class="form-select">
+                {% for u in ['unit', 'pair', 'set', 'box', 'reel', 'each'] %}
+                  <option value="{{ u }}" {% if item and item.unit == u %}selected{% endif %}>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Storage Location</label>
+              <input type="text" name="location" class="form-control"
+                     value="{{ item.location if item else '' }}" placeholder="e.g. Bay A1">
+            </div>
+            {% if action == 'add' %}
+            <div class="col-12 col-md-4">
+              <label class="form-label">Opening Stock</label>
+              <input type="number" name="current_stock" class="form-control" min="0"
+                     value="0" placeholder="0">
+            </div>
+            {% endif %}
+            <div class="col-12 col-md-4">
+              <label class="form-label">Min Stock Level</label>
+              <input type="number" name="min_stock_level" class="form-control" min="0"
+                     value="{{ item.min_stock_level if item else 5 }}" placeholder="5">
+              <div style="font-size:0.72rem;color:#64748b;margin-top:3px;">Alert threshold for low stock warnings.</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Xero Item Code</label>
+              <input type="text" name="xero_item_code" class="form-control"
+                     value="{{ item.xero_item_code if item else '' }}" placeholder="For Xero sync matching">
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-brand px-4">
+              <i class="bi bi-check-lg me-1"></i>{{ 'Save Changes' if action == 'edit' else 'Add Equipment' }}
+            </button>
+            <a href="{{ url_for('equipment.list_equipment') }}" class="btn" style="background:rgba(255,255,255,0.05);color:#94a3b8;">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
