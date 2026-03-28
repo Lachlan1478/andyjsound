@@ -11,7 +11,12 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///warehouse.db")
+
+    db_url = os.environ.get("DATABASE_URL", "sqlite:///warehouse.db")
+    # Railway provides postgres:// but SQLAlchemy 2.x requires postgresql://
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
