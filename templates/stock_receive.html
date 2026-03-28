@@ -70,7 +70,12 @@
         {% if pending_orders %}
           <div style="max-height:480px;overflow-y:auto;">
           {% for order in pending_orders %}
-          <div style="padding:0.75rem 1rem;border-bottom:1px solid #334155;cursor:pointer;" onclick="fillFromOrder('{{ order.id }}', '{{ order.item_description[:30] }}')">
+          <div class="order-card" style="padding:0.75rem 1rem;border-bottom:1px solid var(--brand-border);cursor:pointer;transition:background 0.15s;"
+               data-order-id="{{ order.id }}"
+               data-qty="{{ order.quantity_outstanding }}"
+               data-ref="{{ order.invoice_number }}"
+               data-equipment-id="{{ order.equipment_id or '' }}"
+               onclick="fillFromOrder(this)">
             <div class="d-flex justify-content-between align-items-start">
               <div>
                 <div style="font-weight:600;font-size:0.85rem;">{{ order.invoice_number }}</div>
@@ -109,6 +114,37 @@ function updateCurrentStock(sel) {
     info.textContent = '';
   }
 }
+
+function fillFromOrder(el) {
+  const orderId     = el.dataset.orderId;
+  const qty         = el.dataset.qty;
+  const ref         = el.dataset.ref;
+  const equipmentId = el.dataset.equipmentId;
+
+  // Select the matching Xero order in the dropdown
+  const xeroSel = document.querySelector('select[name="xero_order_id"]');
+  if (xeroSel) xeroSel.value = orderId;
+
+  // Pre-fill quantity
+  const qtyInput = document.querySelector('input[name="quantity"]');
+  if (qtyInput && qty) qtyInput.value = qty;
+
+  // Pre-fill reference / PO number
+  const refInput = document.querySelector('input[name="reference"]');
+  if (refInput && ref) refInput.value = ref;
+
+  // Pre-select equipment if this order is linked to a specific item
+  const equipSel = document.getElementById('equipmentSelect');
+  if (equipSel && equipmentId) {
+    equipSel.value = equipmentId;
+    updateCurrentStock(equipSel);
+  }
+
+  // Highlight the active card
+  document.querySelectorAll('.order-card').forEach(c => c.style.background = '');
+  el.style.background = 'rgba(26,86,160,0.15)';
+}
+
 // Pre-select if query param present
 document.addEventListener('DOMContentLoaded', () => {
   const sel = document.getElementById('equipmentSelect');

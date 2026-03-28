@@ -101,6 +101,8 @@ def adjust():
         equipment_id = int(request.form.get("equipment_id"))
         new_qty = int(request.form.get("new_quantity"))
         reason = request.form.get("reason", "Manual adjustment").strip()
+        extra_notes = request.form.get("notes", "").strip()
+        full_notes = f"{reason}: {extra_notes}" if extra_notes else reason
 
         item = Equipment.query.get_or_404(equipment_id)
         diff = new_qty - item.current_stock
@@ -110,7 +112,7 @@ def adjust():
             equipment_id=equipment_id,
             movement_type="adjustment",
             quantity=diff,
-            notes=reason,
+            notes=full_notes,
             reference="Manual count",
             performed_by=request.form.get("performed_by", "Staff"),
         )

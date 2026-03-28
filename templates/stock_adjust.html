@@ -36,7 +36,7 @@
             </div>
             <div class="col-12">
               <label class="form-label">Reason *</label>
-              <select name="reason" class="form-select">
+              <select name="reason" id="reasonSelect" class="form-select">
                 <option>Stock count correction</option>
                 <option>Damaged goods write-off</option>
                 <option>Lost / missing</option>
@@ -44,6 +44,10 @@
                 <option>Transferred to another location</option>
                 <option>Other</option>
               </select>
+            </div>
+            <div class="col-12" id="notesWrapper" style="display:none;">
+              <label class="form-label">Notes *</label>
+              <textarea name="notes" id="notesField" class="form-control" rows="2" placeholder="Describe the reason…"></textarea>
             </div>
             <div class="col-12">
               <div id="diffDisplay" style="display:none;padding:0.6rem 0.85rem;border-radius:8px;font-size:0.85rem;font-weight:500;"></div>
@@ -97,6 +101,13 @@ function recalcDiff() {
   }
 }
 document.getElementById('newQty').addEventListener('input', recalcDiff);
+
+const reasonSel = document.getElementById('reasonSelect');
+const notesWrapper = document.getElementById('notesWrapper');
+reasonSel.addEventListener('change', () => {
+  notesWrapper.style.display = reasonSel.value === 'Other' ? '' : 'none';
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   const sel = document.getElementById('equipmentSelect');
   if (sel) updateCurrent(sel);

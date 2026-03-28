@@ -16,6 +16,9 @@ def list_equipment():
     category_filter = request.args.get("category", "")
     status_filter = request.args.get("status", "")
     search = request.args.get("q", "")
+    page = request.args.get("page", 1, type=int)
+    sort = request.args.get("sort", "name")
+    direction = request.args.get("dir", "asc")
 
     query = Equipment.query
     if search:
@@ -31,18 +34,32 @@ def list_equipment():
     elif status_filter == "ok":
         query = query.filter(Equipment.current_stock > Equipment.min_stock_level)
 
-    items = query.order_by(Equipment.name).all()
+    sort_map = {
+        "name": Equipment.name,
+        "stock": Equipment.current_stock,
+        "min": Equipment.min_stock_level,
+        "location": Equipment.location,
+        "category": Equipment.category,
+    }
+    sort_col = sort_map.get(sort, Equipment.name)
+    order_expr = sort_col.desc() if direction == "desc" else sort_col.asc()
+
+    pagination = query.order_by(order_expr).paginate(page=page, per_page=20, error_out=False)
+
     categories = db.session.query(Equipment.category).distinct().all()
     categories = [c[0] for c in categories if c[0]]
 
     return render_template(
         "equipment.html",
-        items=items,
+        items=pagination.items,
+        pagination=pagination,
         categories=categories,
         all_categories=CATEGORIES,
         current_category=category_filter,
         current_status=status_filter,
         search=search,
+        sort=sort,
+        direction=direction,
     )
 
 

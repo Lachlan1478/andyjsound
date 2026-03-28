@@ -72,6 +72,17 @@ function updateAvailable(sel) {
 document.addEventListener('DOMContentLoaded', () => {
   const sel = document.getElementById('equipmentSelect');
   if (sel) updateAvailable(sel);
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const qty = parseInt(document.getElementById('qtyInput').value);
+    const max = parseInt(document.getElementById('qtyInput').max);
+    if (!isNaN(max) && max >= 0 && qty > max) {
+      e.preventDefault();
+      const info = document.getElementById('stockInfo');
+      info.textContent = `Cannot dispatch ${qty} — only ${max} available.`;
+      info.style.color = '#f87171';
+    }
+  });
 });
 </script>
 {% endblock %}
